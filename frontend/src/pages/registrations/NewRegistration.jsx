@@ -44,18 +44,16 @@ function NewRegistration() {
     remaining_months: 2,
   });
 
-  // Fetch dropdown options
+  // Fetch initial dropdown options (providers and fields)
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [providersRes, fieldsRes, levelsRes] = await Promise.all([
+        const [providersRes, fieldsRes] = await Promise.all([
           api.get('/api/providers/'),
           api.get('/api/fields/'),
-          api.get('/api/levels/'),
         ]);
         setProviders(providersRes.data);
         setFields(fieldsRes.data);
-        setLevels(levelsRes.data);
       } catch (err) {
         setError('Failed to load form options');
       } finally {
@@ -65,6 +63,37 @@ function NewRegistration() {
 
     fetchOptions();
   }, []);
+
+  // Fetch levels when provider and field are selected
+  useEffect(() => {
+    const fetchLevels = async () => {
+      if (formData.provider && formData.field) {
+        try {
+          const levelsRes = await api.get('/api/levels/', {
+            params: {
+              provider: formData.provider,
+              field: formData.field,
+            }
+          });
+          setLevels(levelsRes.data);
+        } catch (err) {
+          setLevels([]);
+        }
+      } else if (formData.provider) {
+        // If only provider is selected, fetch all levels (fallback)
+        try {
+          const levelsRes = await api.get('/api/levels/');
+          setLevels(levelsRes.data);
+        } catch (err) {
+          setLevels([]);
+        }
+      } else {
+        setLevels([]);
+      }
+    };
+
+    fetchLevels();
+  }, [formData.provider, formData.field]);
 
   // Filter fields based on selected provider
   const filteredFields = formData.provider 
@@ -78,6 +107,8 @@ function NewRegistration() {
       [name]: value,
       // Reset dependent fields when provider changes
       ...(name === 'provider' ? { field: '', level: '' } : {}),
+      // Reset level when field changes
+      ...(name === 'field' ? { level: '' } : {}),
     }));
   };
 
