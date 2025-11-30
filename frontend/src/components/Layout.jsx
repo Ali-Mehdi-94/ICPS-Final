@@ -11,6 +11,8 @@ const pageTitles = {
   '/sales': 'Sales Dashboard',
   '/ops': 'Operations Dashboard',
   '/proqual': 'ProQual Administration',
+  '/registrations': 'Student Registrations',
+  '/registrations/new': 'New Registration',
 };
 
 function Layout({ children }) {

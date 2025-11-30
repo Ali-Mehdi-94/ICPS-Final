@@ -5,6 +5,7 @@ import {
   TrendingUp, 
   Settings, 
   Award,
+  BookOpen,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -36,6 +37,12 @@ const navigationItems = [
     path: '/proqual', 
     icon: Award,
     description: 'Quality administration'
+  },
+  { 
+    name: 'Registrations', 
+    path: '/registrations', 
+    icon: BookOpen,
+    description: 'Student registrations'
   },
 ];
 
