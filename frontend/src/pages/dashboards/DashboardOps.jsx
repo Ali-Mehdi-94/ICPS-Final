@@ -130,6 +130,7 @@ function DashboardOps() {
           <div className="space-y-4">
             <div className="flex items-center justify-center">
               <div className="relative w-32 h-32">
+                {/* SVG Progress Circle: circumference = 2 * π * 40 ≈ 251, factor = 251/100 = 2.51 */}
                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                   <circle 
                     cx="50" cy="50" r="40" 
@@ -209,6 +210,7 @@ function DashboardOps() {
           <div className="space-y-4">
             <div className="flex items-center justify-center">
               <div className="relative w-32 h-32">
+                {/* SVG Progress Circle: circumference = 2 * π * 40 ≈ 251, factor = 251/100 = 2.51 */}
                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                   <circle 
                     cx="50" cy="50" r="40" 
