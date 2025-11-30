@@ -9,6 +9,8 @@ import DashboardCEO from './pages/dashboards/DashboardCEO';
 import DashboardSales from './pages/dashboards/DashboardSales';
 import DashboardOps from './pages/dashboards/DashboardOps';
 import DashboardProQual from './pages/dashboards/DashboardProQual';
+import RegistrationList from './pages/registrations/RegistrationList';
+import NewRegistration from './pages/registrations/NewRegistration';
 
 function App() {
   return (
@@ -27,6 +29,8 @@ function App() {
                     <Route path="/sales" element={<DashboardSales />} />
                     <Route path="/ops" element={<DashboardOps />} />
                     <Route path="/proqual" element={<DashboardProQual />} />
+                    <Route path="/registrations" element={<RegistrationList />} />
+                    <Route path="/registrations/new" element={<NewRegistration />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </Layout>
