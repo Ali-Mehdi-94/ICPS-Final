@@ -1,0 +1,38 @@
+# Django Core
+Django==5.2.5
+
+# Django REST Framework
+djangorestframework==3.16.1
+djangorestframework-simplejwt==5.5.1
+
+# CORS Headers
+django-cors-headers==4.7.0
+
+# Date/Time Utilities
+python-dateutil==2.9.0.post0
+
+# JWT Support (dependency of djangorestframework-simplejwt)
+PyJWT==2.10.1
+
+# Database (SQLite is included with Python, but PostgreSQL adapter if needed)
+# psycopg2-binary==2.9.9  # Uncomment if using PostgreSQL
+
+# Environment Variables (recommended for production)
+python-dotenv==1.0.0
+
+# Timezone Data
+tzdata==2025.2
+
+# SQL Parser (Django dependency)
+sqlparse==0.5.3
+
+# ASGI Server (for production)
+# uvicorn==0.27.0  # Uncomment if using ASGI
+# gunicorn==21.2.0  # Uncomment if using WSGI
+
+# Development Tools (optional)
+# ipython==8.20.0  # Enhanced Python shell
+# django-debug-toolbar==4.2.0  # Debug toolbar for development
+# pytest==7.4.3  # Testing framework
+# pytest-django==4.7.0  # Django plugin for pytest
+
