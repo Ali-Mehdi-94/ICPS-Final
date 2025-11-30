@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
 from django.db import transaction
 from django.utils import timezone
 
@@ -7,6 +8,25 @@ from .models import (
     ProgramTemplate, UnitTemplate, AssignmentUnit, PaymentPlan, PaymentInstallment,
     SalesIncentive, OperationsIncentive, UnitTask
 )
+
+
+@admin.register(CustomUser)
+class CustomUserAdmin(UserAdmin):
+    """Admin configuration for CustomUser with role field."""
+    
+    # Add 'role' to the existing fieldsets for editing users
+    fieldsets = UserAdmin.fieldsets + (
+        ('Role', {'fields': ('role',)}),
+    )
+    
+    # Add 'role' to the add_fieldsets for creating new users
+    add_fieldsets = UserAdmin.add_fieldsets + (
+        ('Role', {'fields': ('role',)}),
+    )
+    
+    # Display role in the list view
+    list_display = ('username', 'email', 'first_name', 'last_name', 'role', 'is_staff')
+    list_filter = UserAdmin.list_filter + ('role',)
 
 @admin.register(CourseProvider)
 class CourseProviderAdmin(admin.ModelAdmin):
