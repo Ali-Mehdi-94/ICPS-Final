@@ -637,7 +637,7 @@ class OverduePaymentsView(APIView):
     def get(self, request):
         user = request.user
         if user.role not in ("CEO", "Sales"):
-            return Response({"detail": "Not authorized."}, status=403)
+            return Response({"detail": "Not authorized."}, status=status.HTTP_403_FORBIDDEN)
             
         today = timezone.localdate()
         overdue = PaymentInstallment.objects.filter(

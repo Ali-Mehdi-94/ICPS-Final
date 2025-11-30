@@ -34,6 +34,7 @@ function DashboardCEO() {
   const [overdueLoading, setOverdueLoading] = useState(true);
   const [error, setError] = useState(null);
   const [markingPaid, setMarkingPaid] = useState(null);
+  const [actionError, setActionError] = useState(null);
 
   const fetchOverduePayments = async () => {
     try {
@@ -66,6 +67,7 @@ function DashboardCEO() {
   const handleMarkPaid = async (installmentId) => {
     try {
       setMarkingPaid(installmentId);
+      setActionError(null);
       await api.post(`/api/installments/${installmentId}/pay/`);
       // Refresh overdue payments list
       await fetchOverduePayments();
@@ -74,7 +76,7 @@ function DashboardCEO() {
       setSummary(summaryResponse.data);
     } catch (err) {
       console.error('Failed to mark payment as paid:', err);
-      alert(err.response?.data?.detail || 'Failed to mark payment as paid');
+      setActionError(err.response?.data?.detail || 'Failed to mark payment as paid');
     } finally {
       setMarkingPaid(null);
     }
@@ -232,6 +234,20 @@ function DashboardCEO() {
             <span className="text-gray-400 text-sm">{overduePayments.length} pending</span>
           </div>
         </div>
+
+        {/* Action Error Message */}
+        {actionError && (
+          <div className="bg-error/10 border border-error/20 rounded-lg p-3 mb-4 flex items-center gap-2">
+            <AlertTriangle size={16} className="text-error" />
+            <span className="text-error text-sm">{actionError}</span>
+            <button
+              onClick={() => setActionError(null)}
+              className="ml-auto text-error hover:text-error/80"
+            >
+              ×
+            </button>
+          </div>
+        )}
         
         {overdueLoading ? (
           <div className="flex items-center justify-center py-8">
