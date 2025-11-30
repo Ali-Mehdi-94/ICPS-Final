@@ -21,7 +21,11 @@ def apply_template_defaults(reg: Registration):
 
 
 def build_payment_schedule(reg: Registration, total_fee):
-    """Create/refresh a payment plan + installments from reg.upfront_payment_percent & remaining_months."""
+    """
+    Create/refresh a payment plan + installments.
+    PRESERVES existing paid installments.
+    Only updates unpaid installments or creates new ones if needed.
+    """
     if not total_fee:
         return
 
@@ -34,26 +38,42 @@ def build_payment_schedule(reg: Registration, total_fee):
         },
     )
 
-    # wipe old installments (idempotent pattern)
-    plan.installments.all().delete()
-
-    upfront = round((total_fee * reg.upfront_payment_percent) / 100, 2)
-    remaining = total_fee - upfront
+    upfront_amount = round((total_fee * reg.upfront_payment_percent) / 100, 2)
     months = reg.remaining_months or 0
-    per_month = round(remaining / months, 2) if months else 0
-
     today = timezone.localdate()
-
-    # seq=0 upfront (due today)
-    PaymentInstallment.objects.create(
-        plan=plan, sequence=0, amount=upfront, due_date=today
-    )
-    # seq=1..N months after
-    for i in range(1, months + 1):
-        due = today + timedelta(days=30 * i)
+    
+    # 1. Handle Upfront (Seq 0)
+    try:
+        inst_0 = plan.installments.get(sequence=0)
+        if not inst_0.paid_at:
+            inst_0.amount = upfront_amount
+            inst_0.save()
+    except PaymentInstallment.DoesNotExist:
         PaymentInstallment.objects.create(
-            plan=plan, sequence=i, amount=per_month, due_date=due
+            plan=plan, sequence=0, amount=upfront_amount, due_date=today
         )
+
+    # 2. Handle Monthly Installments
+    remaining_after_upfront = total_fee - upfront_amount
+    per_month = round(remaining_after_upfront / months, 2) if months else 0
+    
+    existing_installments = {i.sequence: i for i in plan.installments.filter(sequence__gt=0)}
+    
+    for i in range(1, months + 1):
+        due_date = today + timedelta(days=30 * i)
+        if i in existing_installments:
+            inst = existing_installments[i]
+            if not inst.paid_at:
+                inst.amount = per_month
+                inst.due_date = due_date
+                inst.save()
+        else:
+            PaymentInstallment.objects.create(
+                plan=plan, sequence=i, amount=per_month, due_date=due_date
+            )
+            
+    # 3. Cleanup: Remove any extra unpaid installments
+    plan.installments.filter(sequence__gt=months, paid_at__isnull=True).delete()
 
 
 def create_units_for_registration(reg: Registration):

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Crown, Users, BookOpen, DollarSign, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { Crown, Users, BookOpen, DollarSign, AlertTriangle, CheckCircle, Loader2, Calendar, Clock } from 'lucide-react';
 import api from '../../services/api';
 
 function StatCard({ title, value, icon: Icon, subtitle, variant = 'default' }) {
@@ -29,8 +29,24 @@ function StatCard({ title, value, icon: Icon, subtitle, variant = 'default' }) {
 
 function DashboardCEO() {
   const [summary, setSummary] = useState(null);
+  const [overduePayments, setOverduePayments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [overdueLoading, setOverdueLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [markingPaid, setMarkingPaid] = useState(null);
+  const [actionError, setActionError] = useState(null);
+
+  const fetchOverduePayments = async () => {
+    try {
+      setOverdueLoading(true);
+      const response = await api.get('/api/dashboard/payments/overdue/');
+      setOverduePayments(response.data);
+    } catch (err) {
+      console.error('Failed to load overdue payments:', err);
+    } finally {
+      setOverdueLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -45,7 +61,26 @@ function DashboardCEO() {
     };
 
     fetchSummary();
+    fetchOverduePayments();
   }, []);
+
+  const handleMarkPaid = async (installmentId) => {
+    try {
+      setMarkingPaid(installmentId);
+      setActionError(null);
+      await api.post(`/api/installments/${installmentId}/pay/`);
+      // Refresh overdue payments list
+      await fetchOverduePayments();
+      // Refresh summary to update counts
+      const summaryResponse = await api.get('/api/dashboard/ceo/summary/');
+      setSummary(summaryResponse.data);
+    } catch (err) {
+      console.error('Failed to mark payment as paid:', err);
+      setActionError(err.response?.data?.detail || 'Failed to mark payment as paid');
+    } finally {
+      setMarkingPaid(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -96,7 +131,7 @@ function DashboardCEO() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <StatCard
           title="Total Students"
           value={summary.students_total}
@@ -118,6 +153,12 @@ function DashboardCEO() {
           value={summary.registrations_completed}
           icon={CheckCircle}
           variant="success"
+        />
+        <StatCard
+          title="Overdue Payments"
+          value={overduePayments.length}
+          icon={Clock}
+          variant={overduePayments.length > 0 ? 'error' : 'success'}
         />
       </div>
 
@@ -182,6 +223,91 @@ function DashboardCEO() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Overdue Payments Table */}
+      <div className="bg-surface border border-border rounded-xl p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-100">Overdue Payments</h3>
+          <div className="flex items-center gap-2">
+            <Calendar size={16} className="text-gray-400" />
+            <span className="text-gray-400 text-sm">{overduePayments.length} pending</span>
+          </div>
+        </div>
+
+        {/* Action Error Message */}
+        {actionError && (
+          <div className="bg-error/10 border border-error/20 rounded-lg p-3 mb-4 flex items-center gap-2">
+            <AlertTriangle size={16} className="text-error" />
+            <span className="text-error text-sm">{actionError}</span>
+            <button
+              onClick={() => setActionError(null)}
+              className="ml-auto text-error hover:text-error/80"
+            >
+              ×
+            </button>
+          </div>
+        )}
+        
+        {overdueLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 size={24} className="animate-spin text-primary" />
+          </div>
+        ) : overduePayments.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">
+            <CheckCircle size={32} className="mx-auto mb-2 text-success" />
+            <p>No overdue payments</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-4 text-gray-400 font-medium text-sm">Student</th>
+                  <th className="text-left py-3 px-4 text-gray-400 font-medium text-sm">Provider</th>
+                  <th className="text-left py-3 px-4 text-gray-400 font-medium text-sm">Registered By</th>
+                  <th className="text-right py-3 px-4 text-gray-400 font-medium text-sm">Amount</th>
+                  <th className="text-left py-3 px-4 text-gray-400 font-medium text-sm">Due Date</th>
+                  <th className="text-right py-3 px-4 text-gray-400 font-medium text-sm">Days Overdue</th>
+                  <th className="text-center py-3 px-4 text-gray-400 font-medium text-sm">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {overduePayments.map((payment) => (
+                  <tr key={payment.id} className="border-b border-border/50 hover:bg-surface-hover/50">
+                    <td className="py-3 px-4 text-gray-100">{payment.student_name}</td>
+                    <td className="py-3 px-4 text-gray-300">{payment.provider}</td>
+                    <td className="py-3 px-4 text-gray-300">{payment.registered_by}</td>
+                    <td className="py-3 px-4 text-right text-gray-100 font-medium">{formatCurrency(payment.amount)}</td>
+                    <td className="py-3 px-4 text-gray-300">{payment.due_date}</td>
+                    <td className="py-3 px-4 text-right">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        payment.days_overdue > 30 ? 'bg-error/20 text-error' : 
+                        payment.days_overdue > 14 ? 'bg-warning/20 text-warning' : 
+                        'bg-yellow-500/20 text-yellow-500'
+                      }`}>
+                        {payment.days_overdue} days
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        onClick={() => handleMarkPaid(payment.id)}
+                        disabled={markingPaid === payment.id}
+                        className="px-3 py-1.5 bg-success/20 text-success hover:bg-success/30 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {markingPaid === payment.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          'Mark Paid'
+                        )}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
