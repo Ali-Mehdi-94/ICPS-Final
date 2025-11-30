@@ -10,14 +10,30 @@ const pageTitles = {
   '/ceo': 'CEO Dashboard',
   '/sales': 'Sales Dashboard',
   '/ops': 'Operations Dashboard',
+  '/ops/workspace': 'Ops Workspace',
   '/proqual': 'ProQual Administration',
   '/registrations': 'Student Registrations',
   '/registrations/new': 'New Registration',
 };
 
+// Helper function to get page title (handles dynamic routes)
+const getPageTitle = (pathname) => {
+  // Check for exact match first
+  if (pageTitles[pathname]) {
+    return pageTitles[pathname];
+  }
+  
+  // Check for dynamic routes
+  if (pathname.match(/^\/registrations\/\d+$/)) {
+    return 'Registration Details';
+  }
+  
+  return 'Dashboard';
+};
+
 function Layout({ children }) {
   const location = useLocation();
-  const pageTitle = pageTitles[location.pathname] || 'Dashboard';
+  const pageTitle = getPageTitle(location.pathname);
   const { user, logout } = useAuth();
 
   const handleLogout = () => {

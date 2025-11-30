@@ -11,6 +11,8 @@ import DashboardOps from './pages/dashboards/DashboardOps';
 import DashboardProQual from './pages/dashboards/DashboardProQual';
 import RegistrationList from './pages/registrations/RegistrationList';
 import NewRegistration from './pages/registrations/NewRegistration';
+import RegistrationDetail from './pages/registrations/RegistrationDetail';
+import OpsWorkspace from './pages/dashboards/OpsWorkspace';
 
 function App() {
   return (
@@ -31,6 +33,8 @@ function App() {
                     <Route path="/proqual" element={<DashboardProQual />} />
                     <Route path="/registrations" element={<RegistrationList />} />
                     <Route path="/registrations/new" element={<NewRegistration />} />
+                    <Route path="/registrations/:id" element={<RegistrationDetail />} />
+                    <Route path="/ops/workspace" element={<OpsWorkspace />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </Layout>
