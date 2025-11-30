@@ -167,13 +167,9 @@ function RegistrationList() {
                     onClick={() => navigate(`/registrations/${registration.id}`)}
                   >
                     <td className="px-6 py-4">
-                      <Link 
-                        to={`/registrations/${registration.id}`}
-                        className="text-gray-100 font-medium hover:text-primary transition-colors"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <span className="text-gray-100 font-medium hover:text-primary transition-colors">
                         {registration.student_name}
-                      </Link>
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-gray-100">

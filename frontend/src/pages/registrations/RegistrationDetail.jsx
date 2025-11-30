@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft,
   User, 
@@ -290,7 +290,8 @@ function RegistrationDetail() {
                     {task.status === 'DONE' ? <CheckCircle size={18} /> : <Clock size={18} />}
                   </div>
                   <div>
-                    <p className="text-gray-100 font-medium">{task.name || task.title}</p>
+                    {/* Task name uses fallback to handle both 'name' and 'title' properties from API */}
+                    <p className="text-gray-100 font-medium">{task.name || task.title || 'Untitled Task'}</p>
                     <p className="text-gray-500 text-sm">
                       {task.type || 'Task'} 
                       {task.due_date && ` • Due: ${new Date(task.due_date).toLocaleDateString()}`}
