@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { User, LogOut } from 'lucide-react';
 import Sidebar from './Sidebar';
+import { useAuth } from '../context/AuthContext';
 
 // Map routes to page titles
 const pageTitles = {
@@ -15,6 +16,11 @@ const pageTitles = {
 function Layout({ children }) {
   const location = useLocation();
   const pageTitle = pageTitles[location.pathname] || 'Dashboard';
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -41,13 +47,14 @@ function Layout({ children }) {
                 <User size={16} className="text-gray-300" />
               </div>
               <span className="hidden sm:block text-sm text-gray-300 group-hover:text-gray-100 transition-colors">
-                Profile
+                {user?.username || 'Profile'}
               </span>
             </button>
 
             {/* Logout button */}
             <button 
               aria-label="Logout"
+              onClick={handleLogout}
               className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-error/10 text-gray-400 hover:text-error transition-colors group"
             >
               <LogOut size={18} />

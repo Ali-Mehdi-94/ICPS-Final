@@ -2,6 +2,9 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Crown, TrendingUp, Settings, Award, LayoutDashboard } from 'lucide-react';
 import Layout from './components/Layout';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import LoginPage from './pages/LoginPage';
 
 // Placeholder Dashboard Component
 function DashboardPlaceholder({ title, icon: Icon, description }) {
@@ -94,16 +97,28 @@ function ProQualDashboard() {
 function App() {
   return (
     <BrowserRouter>
-      <Layout>
+      <AuthProvider>
         <Routes>
-          <Route path="/" element={<HomeDashboard />} />
-          <Route path="/ceo" element={<CEODashboard />} />
-          <Route path="/sales" element={<SalesDashboard />} />
-          <Route path="/ops" element={<OpsDashboard />} />
-          <Route path="/proqual" element={<ProQualDashboard />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<HomeDashboard />} />
+                    <Route path="/ceo" element={<CEODashboard />} />
+                    <Route path="/sales" element={<SalesDashboard />} />
+                    <Route path="/ops" element={<OpsDashboard />} />
+                    <Route path="/proqual" element={<ProQualDashboard />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
         </Routes>
-      </Layout>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
