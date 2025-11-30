@@ -50,7 +50,8 @@ def unit_task_post_save(sender, instance: UnitTask, created, **kwargs):
     - Send notifications if the task is due or due soon.
     """
     # Only send notifications for new tasks or when due date changes
-    if not created and 'due_date' not in kwargs.get('update_fields', []):
+    update_fields = kwargs.get('update_fields') or []
+    if not created and 'due_date' not in update_fields:
         return
     
     # Skip if task is already completed
@@ -85,7 +86,8 @@ def payment_installment_post_save(sender, instance: PaymentInstallment, created,
         return
     
     # Only send notifications for new installments or when due date changes
-    if not created and 'due_date' not in kwargs.get('update_fields', []):
+    update_fields = kwargs.get('update_fields') or []
+    if not created and 'due_date' not in update_fields:
         return
     
     today = timezone.localdate()
