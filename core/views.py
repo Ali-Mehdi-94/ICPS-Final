@@ -625,3 +625,40 @@ class ProQualOpsListView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+
+class OverduePaymentsView(APIView):
+    """
+    GET /dashboard/payments/overdue/
+    Returns a list of all overdue payment installments.
+    Accessible by CEO and Sales.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if user.role not in ("CEO", "Sales"):
+            return Response({"detail": "Not authorized."}, status=403)
+            
+        today = timezone.localdate()
+        overdue = PaymentInstallment.objects.filter(
+            paid_at__isnull=True,
+            due_date__lt=today
+        ).select_related('plan__registration__student', 'plan__registration__provider', 'plan__registration__registered_by')
+        
+        if user.role == "Sales":
+            overdue = overdue.filter(plan__registration__registered_by=user)
+            
+        data = []
+        for inst in overdue:
+            data.append({
+                "id": inst.id,
+                "student_name": inst.plan.registration.student.name,
+                "provider": inst.plan.registration.provider.name,
+                "amount": inst.amount,
+                "due_date": inst.due_date,
+                "days_overdue": (today - inst.due_date).days,
+                "registered_by": inst.plan.registration.registered_by.username if inst.plan.registration.registered_by else "Unknown"
+            })
+            
+        return Response(data)
+
