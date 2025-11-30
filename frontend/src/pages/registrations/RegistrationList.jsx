@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   BookOpen, 
   Plus, 
@@ -12,6 +12,7 @@ import {
 import api from '../../services/api';
 
 function RegistrationList() {
+  const navigate = useNavigate();
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -162,10 +163,11 @@ function RegistrationList() {
                 {registrations.map((registration) => (
                   <tr 
                     key={registration.id} 
-                    className="hover:bg-surface-hover/50 transition-colors"
+                    className="hover:bg-surface-hover/50 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/registrations/${registration.id}`)}
                   >
                     <td className="px-6 py-4">
-                      <span className="text-gray-100 font-medium">
+                      <span className="text-gray-100 font-medium hover:text-primary transition-colors">
                         {registration.student_name}
                       </span>
                     </td>
