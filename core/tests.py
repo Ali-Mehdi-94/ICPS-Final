@@ -293,3 +293,147 @@ class OverduePaymentsViewTests(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 0)
+
+
+class OpsCannotCreateRegistrationTests(TestCase):
+    """Tests for restricting Ops users from creating registrations."""
+    
+    def setUp(self):
+        """Set up test fixtures."""
+        self.client = APIClient()
+        
+        self.ops_user = CustomUser.objects.create_user(
+            username="opsuser",
+            password="testpass123",
+            role="Ops"
+        )
+        self.sales_user = CustomUser.objects.create_user(
+            username="salesuser",
+            password="testpass123",
+            role="Sales"
+        )
+        
+        self.provider = CourseProvider.objects.create(name="OTHM")
+        self.field = Field.objects.create(name="OHS", provider=self.provider)
+        self.level = Level.objects.create(number=5)
+        self.student = Student.objects.create(
+            name="Test Student",
+            email="test@example.com",
+            phone="1234567890",
+            dob="1990-01-01"
+        )
+    
+    def test_ops_cannot_create_registration(self):
+        """Test that Ops users cannot create registrations."""
+        self.client.force_authenticate(user=self.ops_user)
+        
+        response = self.client.post('/api/registrations/', {
+            'student': self.student.id,
+            'provider': self.provider.id,
+            'field': self.field.id,
+            'level': self.level.id,
+        })
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertIn('not allowed', response.data['detail'].lower())
+    
+    def test_sales_can_create_registration(self):
+        """Test that Sales users can still create registrations."""
+        self.client.force_authenticate(user=self.sales_user)
+        
+        response = self.client.post('/api/registrations/', {
+            'student': self.student.id,
+            'provider': self.provider.id,
+            'field': self.field.id,
+            'level': self.level.id,
+        })
+        
+        # Should succeed (201 Created)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+
+class IsAdminOrSalesPermissionTests(TestCase):
+    """Tests for the IsAdminOrSales permission class."""
+    
+    def setUp(self):
+        """Set up test fixtures."""
+        self.client = APIClient()
+        
+        self.ceo_user = CustomUser.objects.create_user(
+            username="ceouser",
+            password="testpass123",
+            role="CEO"
+        )
+        self.sales_user = CustomUser.objects.create_user(
+            username="salesuser",
+            password="testpass123",
+            role="Sales"
+        )
+        self.ops_user = CustomUser.objects.create_user(
+            username="opsuser",
+            password="testpass123",
+            role="Ops"
+        )
+        self.proqual_user = CustomUser.objects.create_user(
+            username="proqualadmin",
+            password="testpass123",
+            role="ProQualAdmin"
+        )
+        
+        self.provider = CourseProvider.objects.create(name="OTHM")
+    
+    def test_ops_can_read_providers(self):
+        """Test that Ops can read (GET) providers."""
+        self.client.force_authenticate(user=self.ops_user)
+        
+        response = self.client.get('/api/providers/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+    
+    def test_ops_cannot_create_provider(self):
+        """Test that Ops cannot create providers."""
+        self.client.force_authenticate(user=self.ops_user)
+        
+        response = self.client.post('/api/providers/', {'name': 'NewProvider'})
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    
+    def test_ops_cannot_update_provider(self):
+        """Test that Ops cannot update providers."""
+        self.client.force_authenticate(user=self.ops_user)
+        
+        response = self.client.put(f'/api/providers/{self.provider.id}/', {'name': 'UpdatedProvider'})
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    
+    def test_ops_cannot_delete_provider(self):
+        """Test that Ops cannot delete providers."""
+        self.client.force_authenticate(user=self.ops_user)
+        
+        response = self.client.delete(f'/api/providers/{self.provider.id}/')
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    
+    def test_ceo_can_create_provider(self):
+        """Test that CEO can create providers."""
+        self.client.force_authenticate(user=self.ceo_user)
+        
+        response = self.client.post('/api/providers/', {'name': 'NewProvider'})
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    
+    def test_sales_can_create_provider(self):
+        """Test that Sales can create providers."""
+        self.client.force_authenticate(user=self.sales_user)
+        
+        response = self.client.post('/api/providers/', {'name': 'SalesProvider'})
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    
+    def test_proqual_can_create_provider(self):
+        """Test that ProQualAdmin can create providers."""
+        self.client.force_authenticate(user=self.proqual_user)
+        
+        response = self.client.post('/api/providers/', {'name': 'ProQualProvider'})
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)

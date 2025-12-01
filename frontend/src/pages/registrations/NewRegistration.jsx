@@ -27,6 +27,14 @@ function NewRegistration() {
   const [levels, setLevels] = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
 
+  // Qualification type options
+  const qualificationTypes = [
+    { value: 'award', label: 'Award' },
+    { value: 'certificate', label: 'Certificate' },
+    { value: 'diploma', label: 'Diploma' },
+    { value: 'extended', label: 'Extended Diploma' },
+  ];
+
   // Form data
   const [formData, setFormData] = useState({
     // Student Info
@@ -38,6 +46,7 @@ function NewRegistration() {
     provider: '',
     field: '',
     level: '',
+    qualification_type: '',
     // Financials
     total_fee: '',
     upfront_payment_percent: 50,
@@ -134,6 +143,7 @@ function NewRegistration() {
         provider: parseInt(formData.provider),
         field: parseInt(formData.field),
         level: parseInt(formData.level),
+        qualification_type: formData.qualification_type || null,
         total_fee: formData.total_fee ? parseFloat(formData.total_fee) : null,
         upfront_payment_percent: parseInt(formData.upfront_payment_percent),
         remaining_months: parseInt(formData.remaining_months),
@@ -362,6 +372,25 @@ function NewRegistration() {
                 {levels.map(level => (
                   <option key={level.id} value={level.id}>
                     Level {level.number}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Qualification Type
+              </label>
+              <select
+                name="qualification_type"
+                value={formData.qualification_type}
+                onChange={handleInputChange}
+                className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-gray-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+              >
+                <option value="">Select Type (Optional)</option>
+                {qualificationTypes.map(type => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
                   </option>
                 ))}
               </select>

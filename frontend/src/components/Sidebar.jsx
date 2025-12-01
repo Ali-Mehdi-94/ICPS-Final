@@ -9,9 +9,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  X
+  X,
+  Cog
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useAuth } from '../context/AuthContext';
 
 const navigationItems = [
   { 
@@ -46,12 +48,31 @@ const navigationItems = [
   },
 ];
 
+// Course Settings visible only to Sales, CEO, ProQualAdmin
+const courseSettingsItem = { 
+  name: 'Course Settings', 
+  path: '/settings/courses', 
+  icon: Cog,
+  description: 'Manage courses',
+  roles: ['Sales', 'CEO', 'ProQualAdmin']
+};
+
 function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { user } = useAuth();
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
   const toggleMobile = () => setIsMobileOpen(!isMobileOpen);
+
+  // Build navigation items based on user role
+  const userRole = user?.role || '';
+  const navItems = [...navigationItems];
+  
+  // Add Course Settings if user has appropriate role
+  if (courseSettingsItem.roles.includes(userRole)) {
+    navItems.push(courseSettingsItem);
+  }
 
   return (
     <>
@@ -106,7 +127,7 @@ function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-          {navigationItems.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
