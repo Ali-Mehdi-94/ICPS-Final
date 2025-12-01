@@ -11,6 +11,9 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 
+// Constants
+const SUCCESS_TIMEOUT_MS = 3000;
+
 function CourseManagement() {
   // Data states
   const [providers, setProviders] = useState([]);
@@ -65,7 +68,7 @@ function CourseManagement() {
       setProviders(prev => [...prev, response.data]);
       setNewProvider('');
       setSuccess(prev => ({ ...prev, provider: true }));
-      setTimeout(() => setSuccess(prev => ({ ...prev, provider: false })), 3000);
+      setTimeout(() => setSuccess(prev => ({ ...prev, provider: false })), SUCCESS_TIMEOUT_MS);
     } catch (err) {
       setError('Failed to add provider');
     } finally {
@@ -89,7 +92,7 @@ function CourseManagement() {
       setFields(prev => [...prev, response.data]);
       setNewField({ name: '', provider: '' });
       setSuccess(prev => ({ ...prev, field: true }));
-      setTimeout(() => setSuccess(prev => ({ ...prev, field: false })), 3000);
+      setTimeout(() => setSuccess(prev => ({ ...prev, field: false })), SUCCESS_TIMEOUT_MS);
     } catch (err) {
       setError('Failed to add field');
     } finally {
@@ -110,7 +113,7 @@ function CourseManagement() {
       setLevels(prev => [...prev, response.data].sort((a, b) => a.number - b.number));
       setNewLevel('');
       setSuccess(prev => ({ ...prev, level: true }));
-      setTimeout(() => setSuccess(prev => ({ ...prev, level: false })), 3000);
+      setTimeout(() => setSuccess(prev => ({ ...prev, level: false })), SUCCESS_TIMEOUT_MS);
     } catch (err) {
       setError('Failed to add level');
     } finally {
