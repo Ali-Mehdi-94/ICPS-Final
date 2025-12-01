@@ -14,6 +14,7 @@ const pageTitles = {
   '/proqual': 'ProQual Administration',
   '/registrations': 'Student Registrations',
   '/registrations/new': 'New Registration',
+  '/settings/courses': 'Course Settings',
 };
 
 // Helper function to get page title (handles dynamic routes)

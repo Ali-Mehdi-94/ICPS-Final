@@ -1,5 +1,5 @@
 import logging
-from .permissions import IsCEO, IsSales, IsOps, IsProQualAdmin
+from .permissions import IsCEO, IsSales, IsOps, IsProQualAdmin, IsAdminOrSales
 from django.db.models import Q
 from django.db import transaction
 
@@ -9,7 +9,7 @@ from rest_framework import viewsets, permissions, status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import ValidationError as DRFValidationError
+from rest_framework.exceptions import ValidationError as DRFValidationError, PermissionDenied
 from django.utils import timezone
 from .models import CustomUser, Student, Registration, CourseProvider, Field, Level, UnitTask, PaymentInstallment
 from .serializers import (
@@ -32,12 +32,12 @@ class UserViewSet(viewsets.ModelViewSet):
 class CourseProviderViewSet(viewsets.ModelViewSet):
     queryset = CourseProvider.objects.all()
     serializer_class = CourseProviderSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrSales]
 
 class FieldViewSet(viewsets.ModelViewSet):
     queryset = Field.objects.all()
     serializer_class = FieldSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrSales]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -55,7 +55,7 @@ class FieldViewSet(viewsets.ModelViewSet):
 class LevelViewSet(viewsets.ModelViewSet):
     queryset = Level.objects.all()
     serializer_class = LevelSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrSales]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -122,6 +122,10 @@ class RegistrationViewSet(viewsets.ModelViewSet):
         return qs.none()
 
     def perform_create(self, serializer):
+        # Operations team members must NOT be allowed to create registrations
+        if self.request.user.role == 'Ops':
+            raise PermissionDenied("Operations team members are not allowed to create registrations.")
+        
         # Check if this is a ProQual registration
         provider = serializer.validated_data.get("provider")
         is_proqual = provider and provider.name.lower() == "proqual"

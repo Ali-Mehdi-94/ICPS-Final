@@ -13,6 +13,7 @@ import RegistrationList from './pages/registrations/RegistrationList';
 import NewRegistration from './pages/registrations/NewRegistration';
 import RegistrationDetail from './pages/registrations/RegistrationDetail';
 import OpsWorkspace from './pages/dashboards/OpsWorkspace';
+import CourseManagement from './pages/settings/CourseManagement';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
                     <Route path="/registrations/new" element={<NewRegistration />} />
                     <Route path="/registrations/:id" element={<RegistrationDetail />} />
                     <Route path="/ops/workspace" element={<OpsWorkspace />} />
+                    <Route path="/settings/courses" element={<CourseManagement />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </Layout>
