@@ -1,5 +1,5 @@
 import logging
-from .permissions import IsCEO, IsSales, IsOps, IsProQualAdmin, IsAdminOrSales
+from .permissions import IsCEO, IsSales, IsOps, IsProQualAdmin, IsAdminOrSales, IsHR, IsFinance
 from django.db.models import Q
 from django.db import transaction
 
@@ -20,7 +20,7 @@ from .serializers import (
     FieldSerializer,
     LevelSerializer,
 )
-from .dashboard import get_ceo_summary, get_sales_summary, get_ops_summary, get_proqual_admin_summary
+from .dashboard import get_ceo_summary, get_sales_summary, get_ops_summary, get_proqual_admin_summary, get_hr_summary, get_finance_summary
 
 logger = logging.getLogger(__name__)
 
@@ -130,20 +130,22 @@ class RegistrationViewSet(viewsets.ModelViewSet):
         provider = serializer.validated_data.get("provider")
         is_proqual = provider and provider.name.lower() == "proqual"
         
-        # If client didn't provide assigned_to, do round-robin (skip for ProQual)
-        assigned_user = serializer.validated_data.get("assigned_to")
-        if assigned_user is None and not is_proqual:
-            # Only use round-robin for non-ProQual registrations
-            try:
-                assigned_user = next_ops_user()
-                if assigned_user is None:
-                    logger.warning("No Ops users available for round-robin assignment")
-            except (ValueError, Exception) as e:
-                logger.error(f"Error in round-robin assignment: {str(e)}")
-                assigned_user = None  # will save as null if truly no Ops
-        elif assigned_user is None and is_proqual:
-            # ProQual requires manual assignment - don't auto-assign
+        # Force assigned_to=None for ProQual registrations (manual assignment required)
+        if is_proqual:
+            assigned_user = None
             logger.info("ProQual registration created without assigned_to - requires manual assignment")
+        else:
+            # If client didn't provide assigned_to, do round-robin (skip for ProQual)
+            assigned_user = serializer.validated_data.get("assigned_to")
+            if assigned_user is None:
+                # Only use round-robin for non-ProQual registrations
+                try:
+                    assigned_user = next_ops_user()
+                    if assigned_user is None:
+                        logger.warning("No Ops users available for round-robin assignment")
+                except (ValueError, Exception) as e:
+                    logger.error(f"Error in round-robin assignment: {str(e)}")
+                    assigned_user = None  # will save as null if truly no Ops
         
         try:
             with transaction.atomic():
@@ -665,4 +667,38 @@ class OverduePaymentsView(APIView):
             })
             
         return Response(data)
+
+
+class HrSummaryView(APIView):
+    """HR Dashboard Summary"""
+    permission_classes = [permissions.IsAuthenticated, IsHR]
+
+    def get(self, request):
+        """Get HR dashboard summary."""
+        try:
+            data = get_hr_summary()
+            return Response(data)
+        except Exception as e:
+            logger.error(f"Error generating HR summary: {str(e)}", exc_info=True)
+            return Response(
+                {"detail": "Failed to generate HR dashboard summary."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class FinanceSummaryView(APIView):
+    """Finance Dashboard Summary"""
+    permission_classes = [permissions.IsAuthenticated, IsFinance]
+
+    def get(self, request):
+        """Get Finance dashboard summary."""
+        try:
+            data = get_finance_summary()
+            return Response(data)
+        except Exception as e:
+            logger.error(f"Error generating Finance summary: {str(e)}", exc_info=True)
+            return Response(
+                {"detail": "Failed to generate Finance dashboard summary."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 

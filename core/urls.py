@@ -19,6 +19,8 @@ from .views import (
     UnitTaskCompleteView,
     InstallmentPayView,
     OverduePaymentsView,
+    HrSummaryView,
+    FinanceSummaryView,
 )
 
 router = DefaultRouter()
@@ -39,6 +41,8 @@ urlpatterns = [
     path('dashboard/ops/summary/', OpsSummaryView.as_view(), name='ops-summary'),
     path('dashboard/proqual/summary/', ProQualAdminSummaryView.as_view(), name='proqual-admin-summary'),
     path('dashboard/payments/overdue/', OverduePaymentsView.as_view(), name='overdue-payments'),
+    path('dashboard/hr/summary/', HrSummaryView.as_view(), name='hr-summary'),
+    path('dashboard/finance/summary/', FinanceSummaryView.as_view(), name='finance-summary'),
     # ProQual Admin Actions
     path('proqual/registrations/<int:pk>/assign-ops/', ProQualAssignOpsView.as_view(), name='proqual-assign-ops'),
     path('proqual/registrations/<int:pk>/set-portal-date/', ProQualSetPortalDateView.as_view(), name='proqual-set-portal-date'),

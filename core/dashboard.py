@@ -373,3 +373,100 @@ def get_proqual_admin_summary():
         "units_overdue_total": units_overdue_total,
         "ops_performance": list(ops_performance.values()),
     }
+
+
+def get_hr_summary():
+    """
+    Return a dict with HR dashboard data:
+    - Total users
+    - Active/inactive users
+    - Role breakdown
+    """
+    from .models import CustomUser
+    
+    # Total users
+    total_users = CustomUser.objects.count()
+    
+    # Active/inactive users
+    active_users = CustomUser.objects.filter(is_active=True).count()
+    inactive_users = CustomUser.objects.filter(is_active=False).count()
+    
+    # Role breakdown
+    role_breakdown = {}
+    for role_code, role_name in CustomUser.ROLE_CHOICES:
+        count = CustomUser.objects.filter(role=role_code).count()
+        role_breakdown[role_code] = {
+            "name": role_name,
+            "count": count,
+        }
+    
+    return {
+        "total_users": total_users,
+        "active_users": active_users,
+        "inactive_users": inactive_users,
+        "role_breakdown": role_breakdown,
+    }
+
+
+def get_finance_summary():
+    """
+    Return a dict with Finance dashboard data:
+    - Revenue expected vs collected
+    - Overdue payments
+    - Incentive liabilities (sales + ops)
+    """
+    today = timezone.localdate()
+    
+    # Revenue expected = sum of all total_fee from Registration
+    revenue_expected = Registration.objects.aggregate(
+        total=Sum("total_fee")
+    )["total"] or 0
+    
+    # Revenue collected = sum of all paid installments
+    revenue_collected = PaymentInstallment.objects.filter(
+        paid_at__isnull=False
+    ).aggregate(total=Sum("amount"))["total"] or 0
+    
+    # Revenue pending
+    revenue_pending = revenue_expected - revenue_collected
+    
+    # Overdue payments count and amount
+    overdue_installments = PaymentInstallment.objects.filter(
+        paid_at__isnull=True,
+        due_date__lt=today
+    )
+    overdue_payments_count = overdue_installments.count()
+    overdue_payments_amount = overdue_installments.aggregate(
+        total=Sum("amount")
+    )["total"] or 0
+    
+    # Incentive liabilities
+    # Sales incentives pending
+    sales_incentives_pending = SalesIncentive.objects.filter(paid=False)
+    sales_incentives_pending_count = sales_incentives_pending.count()
+    sales_incentives_pending_amount = sales_incentives_pending.aggregate(
+        total=Sum("amount")
+    )["total"] or 0
+    
+    # Ops incentives pending
+    ops_incentives_pending = OperationsIncentive.objects.filter(paid=False)
+    ops_incentives_pending_count = ops_incentives_pending.count()
+    ops_incentives_pending_amount = ops_incentives_pending.aggregate(
+        total=Sum("amount")
+    )["total"] or 0
+    
+    # Total incentive liabilities
+    total_incentive_liabilities = sales_incentives_pending_amount + ops_incentives_pending_amount
+    
+    return {
+        "revenue_expected": float(revenue_expected) if revenue_expected else 0.0,
+        "revenue_collected": float(revenue_collected) if revenue_collected else 0.0,
+        "revenue_pending": float(revenue_pending) if revenue_pending else 0.0,
+        "overdue_payments_count": overdue_payments_count,
+        "overdue_payments_amount": float(overdue_payments_amount) if overdue_payments_amount else 0.0,
+        "sales_incentives_pending_count": sales_incentives_pending_count,
+        "sales_incentives_pending_amount": float(sales_incentives_pending_amount) if sales_incentives_pending_amount else 0.0,
+        "ops_incentives_pending_count": ops_incentives_pending_count,
+        "ops_incentives_pending_amount": float(ops_incentives_pending_amount) if ops_incentives_pending_amount else 0.0,
+        "total_incentive_liabilities": float(total_incentive_liabilities) if total_incentive_liabilities else 0.0,
+    }
