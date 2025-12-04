@@ -41,7 +41,7 @@ class CustomUser(AbstractUser):
         ('HR', 'Human Resources'),
         ('Finance', 'Finance'),
     )
-    role = models.CharField(max_length=15, choices=ROLE_CHOICES)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
 
     objects = CustomUserManager()  # ✅ Add this
 
