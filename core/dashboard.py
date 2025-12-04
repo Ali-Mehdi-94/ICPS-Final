@@ -4,7 +4,7 @@ Dashboard helper functions for CEO and other role-based summaries.
 from datetime import timedelta
 from django.db.models import Sum, Q, Avg
 from django.utils import timezone
-from .models import Student, Registration, PaymentInstallment, UnitTask, SalesIncentive, OperationsIncentive
+from .models import Student, Registration, PaymentInstallment, UnitTask, SalesIncentive, OperationsIncentive, CustomUser
 
 
 def get_ceo_summary():
@@ -382,8 +382,6 @@ def get_hr_summary():
     - Active/inactive users
     - Role breakdown
     """
-    from .models import CustomUser
-    
     # Total users
     total_users = CustomUser.objects.count()
     
