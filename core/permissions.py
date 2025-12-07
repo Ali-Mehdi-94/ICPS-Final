@@ -39,11 +39,33 @@ class IsProQualAdmin(BasePermission):
         )
 
 
+class IsHR(BasePermission):
+    """
+    Only allow access to users whose role = 'HR'
+    """
+    def has_permission(self, request, view):
+        return bool(
+            request.user and request.user.is_authenticated
+            and getattr(request.user, "role", "") == "HR"
+        )
+
+
+class IsFinance(BasePermission):
+    """
+    Only allow access to users whose role = 'Finance'
+    """
+    def has_permission(self, request, view):
+        return bool(
+            request.user and request.user.is_authenticated
+            and getattr(request.user, "role", "") == "Finance"
+        )
+
+
 class IsAdminOrSales(BasePermission):
     """
     Custom permission class that allows:
     - SAFE_METHODS (GET, HEAD, OPTIONS) for all authenticated users
-    - Unsafe methods (POST, PUT, PATCH, DELETE) only for users with roles 'CEO', 'Sales', or 'ProQualAdmin'
+    - Unsafe methods (POST, PUT, PATCH, DELETE) only for users with roles 'CEO', 'Sales', 'ProQualAdmin', or 'Finance'
     """
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
@@ -53,6 +75,6 @@ class IsAdminOrSales(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         
-        # Restrict unsafe methods to CEO, Sales, or ProQualAdmin
+        # Restrict unsafe methods to CEO, Sales, ProQualAdmin, or Finance
         user_role = getattr(request.user, "role", "")
-        return user_role in ("CEO", "Sales", "ProQualAdmin")
+        return user_role in ("CEO", "Sales", "ProQualAdmin", "Finance")

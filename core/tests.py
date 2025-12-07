@@ -437,3 +437,245 @@ class IsAdminOrSalesPermissionTests(TestCase):
         response = self.client.post('/api/providers/', {'name': 'ProQualProvider'})
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+
+class HRAndFinanceRoleTests(TestCase):
+    """Tests for HR and Finance role functionality."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.client = APIClient()
+        
+        # Create users with different roles
+        self.hr_user = CustomUser.objects.create_user(
+            username="hruser",
+            password="testpass123",
+            role="HR"
+        )
+        self.finance_user = CustomUser.objects.create_user(
+            username="financeuser",
+            password="testpass123",
+            role="Finance"
+        )
+        self.sales_user = CustomUser.objects.create_user(
+            username="salesuser",
+            password="testpass123",
+            role="Sales"
+        )
+        self.ops_user = CustomUser.objects.create_user(
+            username="opsuser",
+            password="testpass123",
+            role="Ops"
+        )
+        self.ceo_user = CustomUser.objects.create_user(
+            username="ceouser",
+            password="testpass123",
+            role="CEO"
+        )
+        
+        # Create test data for finance calculations
+        self.provider = CourseProvider.objects.create(name="OTHM")
+        self.field = Field.objects.create(name="OHS", provider=self.provider)
+        self.level = Level.objects.create(number=5)
+        self.student = Student.objects.create(
+            name="Test Student",
+            email="test@example.com",
+            phone="1234567890",
+            dob="1990-01-01"
+        )
+        self.registration = Registration.objects.create(
+            student=self.student,
+            provider=self.provider,
+            field=self.field,
+            level=self.level,
+            registered_by=self.sales_user,
+            total_fee=Decimal("1000.00")
+        )
+    
+    def test_hr_user_can_access_hr_dashboard(self):
+        """Test that HR user can access HR dashboard."""
+        self.client.force_authenticate(user=self.hr_user)
+        
+        response = self.client.get('/api/dashboard/hr/summary/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('total_users', response.data)
+        self.assertIn('active_users', response.data)
+        self.assertIn('inactive_users', response.data)
+        self.assertIn('role_breakdown', response.data)
+    
+    def test_non_hr_user_cannot_access_hr_dashboard(self):
+        """Test that non-HR users cannot access HR dashboard."""
+        self.client.force_authenticate(user=self.sales_user)
+        
+        response = self.client.get('/api/dashboard/hr/summary/')
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    
+    def test_finance_user_can_access_finance_dashboard(self):
+        """Test that Finance user can access Finance dashboard."""
+        self.client.force_authenticate(user=self.finance_user)
+        
+        response = self.client.get('/api/dashboard/finance/summary/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('revenue_expected', response.data)
+        self.assertIn('revenue_collected', response.data)
+        self.assertIn('revenue_pending', response.data)
+        self.assertIn('overdue_payments_count', response.data)
+        self.assertIn('total_incentive_liabilities', response.data)
+    
+    def test_non_finance_user_cannot_access_finance_dashboard(self):
+        """Test that non-Finance users cannot access Finance dashboard."""
+        self.client.force_authenticate(user=self.sales_user)
+        
+        response = self.client.get('/api/dashboard/finance/summary/')
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    
+    def test_hr_summary_returns_correct_user_stats(self):
+        """Test that HR summary returns correct user statistics."""
+        from .dashboard import get_hr_summary
+        
+        data = get_hr_summary()
+        
+        # Should have 5 users (hr, finance, sales, ops, ceo)
+        self.assertEqual(data['total_users'], 5)
+        self.assertEqual(data['active_users'], 5)
+        self.assertEqual(data['inactive_users'], 0)
+        
+        # Check role breakdown
+        self.assertIn('HR', data['role_breakdown'])
+        self.assertIn('Finance', data['role_breakdown'])
+        self.assertEqual(data['role_breakdown']['HR']['count'], 1)
+        self.assertEqual(data['role_breakdown']['Finance']['count'], 1)
+    
+    def test_finance_summary_returns_correct_revenue_stats(self):
+        """Test that Finance summary returns correct financial statistics."""
+        from .dashboard import get_finance_summary
+        
+        data = get_finance_summary()
+        
+        # Should have revenue expected from the registration
+        self.assertGreaterEqual(data['revenue_expected'], 1000.0)
+        self.assertEqual(data['revenue_collected'], 0.0)  # No payments made yet
+        self.assertGreaterEqual(data['revenue_pending'], 1000.0)
+    
+    def test_finance_user_can_create_provider(self):
+        """Test that Finance user can create providers (write operations)."""
+        self.client.force_authenticate(user=self.finance_user)
+        
+        response = self.client.post('/api/providers/', {'name': 'FinanceProvider'})
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    
+    def test_finance_user_can_update_provider(self):
+        """Test that Finance user can update providers."""
+        self.client.force_authenticate(user=self.finance_user)
+        
+        response = self.client.put(f'/api/providers/{self.provider.id}/', {'name': 'UpdatedProvider'})
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class ProQualRegistrationLogicTests(TestCase):
+    """Tests for ProQual registration logic updates."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.client = APIClient()
+        
+        # Create users
+        self.sales_user = CustomUser.objects.create_user(
+            username="salesuser",
+            password="testpass123",
+            role="Sales"
+        )
+        self.ops_user = CustomUser.objects.create_user(
+            username="opsuser",
+            password="testpass123",
+            role="Ops",
+            is_active=True
+        )
+        
+        # Create ProQual provider
+        self.proqual_provider = CourseProvider.objects.create(name="ProQual")
+        self.othm_provider = CourseProvider.objects.create(name="OTHM")
+        self.field = Field.objects.create(name="Business", provider=self.proqual_provider)
+        self.othm_field = Field.objects.create(name="OHS", provider=self.othm_provider)
+        self.level = Level.objects.create(number=5)
+        
+        self.student = Student.objects.create(
+            name="ProQual Student",
+            email="proqual@example.com",
+            phone="1234567890",
+            dob="1995-01-01"
+        )
+    
+    def test_proqual_registration_not_auto_assigned(self):
+        """Test that ProQual registrations are not auto-assigned via round-robin."""
+        self.client.force_authenticate(user=self.sales_user)
+        
+        registration_data = {
+            'student': self.student.id,
+            'provider': self.proqual_provider.id,
+            'field': self.field.id,
+            'level': self.level.id,
+            'total_fee': '1000.00',
+            'upfront_payment_percent': 50,
+            'remaining_months': 2,
+        }
+        
+        response = self.client.post('/api/registrations/', registration_data)
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Verify that assigned_to is None
+        registration = Registration.objects.get(id=response.data['id'])
+        self.assertIsNone(registration.assigned_to)
+    
+    def test_non_proqual_registration_is_auto_assigned(self):
+        """Test that non-ProQual registrations are auto-assigned via round-robin."""
+        self.client.force_authenticate(user=self.sales_user)
+        
+        registration_data = {
+            'student': self.student.id,
+            'provider': self.othm_provider.id,
+            'field': self.othm_field.id,
+            'level': self.level.id,
+            'total_fee': '1000.00',
+            'upfront_payment_percent': 50,
+            'remaining_months': 2,
+        }
+        
+        response = self.client.post('/api/registrations/', registration_data)
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Verify that assigned_to is set (should be ops_user via round-robin)
+        registration = Registration.objects.get(id=response.data['id'])
+        self.assertIsNotNone(registration.assigned_to)
+        self.assertEqual(registration.assigned_to.role, 'Ops')
+    
+    def test_proqual_registration_explicit_assignment_is_ignored(self):
+        """Test that explicit assignment in ProQual registration is ignored."""
+        self.client.force_authenticate(user=self.sales_user)
+        
+        registration_data = {
+            'student': self.student.id,
+            'provider': self.proqual_provider.id,
+            'field': self.field.id,
+            'level': self.level.id,
+            'total_fee': '1000.00',
+            'upfront_payment_percent': 50,
+            'remaining_months': 2,
+            'assigned_to': self.ops_user.id,  # Explicitly try to assign
+        }
+        
+        response = self.client.post('/api/registrations/', registration_data)
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Verify that assigned_to is still None (explicit assignment ignored for ProQual)
+        registration = Registration.objects.get(id=response.data['id'])
+        self.assertIsNone(registration.assigned_to)
